@@ -59,11 +59,18 @@ const LoginPage: NextPage = ({ router }) => {
 
       document.cookie = cookie;
       if (isString(router.query.redirect_uri)) {
-        window.location.href = router.query.redirect_uri;
-      } else if (configs.IS_DEVELOPEMNT) {
-        window.location.href = "http://localhost:3001";
+        const redirectUrl = new URL(router.query.redirect_uri);
+        const isSameHost = redirectUrl.hostname === location.hostname;
+        if (isSameHost) {
+          window.location.href = router.query.redirect_uri;
+        } else {
+          redirectUrl.searchParams.set("code", session.data.accessToken);
+          window.location.href = redirectUrl.href;
+        }
+        return;
       } else {
         router.replace("/");
+        return;
       }
     }
   }, [router, router.query.redirect_uri, session.data, isSubmitted]);
@@ -76,13 +83,6 @@ const LoginPage: NextPage = ({ router }) => {
     }).then((response) => {
       if (response?.status === 200) {
         setIsSubmitted(true);
-        if (isString(router.query.redirect_uri)) {
-          window.location.href = router.query.redirect_uri;
-        } else if (configs.IS_DEVELOPEMNT) {
-          // window.location.href = "http://localhost:3001";
-        } else {
-          // router.replace("/");
-        }
       } else setError("email", { message: response?.error || "Lỗi" });
     });
   });

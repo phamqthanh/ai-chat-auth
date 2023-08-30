@@ -1,5 +1,6 @@
 import Link from "next/link";
 import clsx from "clsx";
+import { FaCircleNotch } from "react-icons/fa";
 
 function ArrowIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -42,6 +43,7 @@ type ButtonProps = {
   variant?: keyof typeof variantStyles;
   arrow?: "left" | "right";
   outline?: boolean;
+  loading?: boolean;
 };
 
 export function Button({
@@ -50,6 +52,7 @@ export function Button({
   children,
   arrow,
   outline,
+  loading,
 
   ...props
 }: (JSX.IntrinsicElements["button"] | JSX.IntrinsicElements["a"]) & ButtonProps) {
@@ -75,6 +78,7 @@ export function Button({
 
   return (
     <Component className={className} {...props}>
+      {loading && <FaCircleNotch className="mt-0.5 h-5 w-5 animate-spin" />}
       {arrow === "left" && arrowIcon}
       {children}
       {arrow === "right" && arrowIcon}

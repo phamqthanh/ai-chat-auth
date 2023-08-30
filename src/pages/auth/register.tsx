@@ -1,35 +1,47 @@
-import { Button } from "@/components/button";
-import RenderError from "@/components/error-hook";
-import { emailRegex } from "@/utilities/validator";
-import { ErrorMessage } from "@hookform/error-message";
+import ExternalOAuth from "@/components/external-oauth";
+import InputAuth from "@/components/input-auth";
+import { RegisterParams, User } from "@/services/user";
 import { joiResolver } from "@hookform/resolvers/joi";
 import Joi from "joi";
 import { NextPage } from "next";
 import Link from "next/link";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { NextSeo } from "next-seo";
+import { Button } from "@/components/button";
+import useBoolean from "@/hooks/useBoolean";
 
-interface IRegisterForm {
-  email: string;
-  password: string;
+interface IRegisterForm extends RegisterParams {
   confirm_password: string;
 }
 const schema = Joi.object({
-  email: Joi.string().pattern(emailRegex),
-  // name: Joi.string(),
-  password: Joi.string(),
-  confirm_password: Joi.ref("password"),
+  email: Joi.string()
+    .email({ minDomainSegments: 2, tlds: { allow: false } })
+    .message("Email is not valid"),
+  name: Joi.string().required(),
+  // name: Joi.string().required().message("Name must not empty"),
+  password: Joi.string().required(),
+  confirm_password: Joi.any()
+    .valid(Joi.ref("password"))
+    .required()
+    .messages({ "any.only": "Password not match" }),
 });
 const RegisterPage: NextPage = () => {
   const { register, formState, handleSubmit, setError } = useForm<IRegisterForm>({
     resolver: joiResolver(schema),
   });
+  const success = useBoolean();
+  const [serverError, setServerError] = useState("");
 
   const onSubmit = handleSubmit(async function (values) {
-    console.log(values);
+    return User.register(values)
+      .then(success.setTrue)
+      .catch((e) => setServerError(e.response.data.message.join(", ")));
   });
 
   return (
     <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
+      <NextSeo title="Register" />
       <div className="sm:mx-auto sm:w-full sm:max-w-sm">
         <img
           className="mx-auto h-10 w-auto"
@@ -38,123 +50,83 @@ const RegisterPage: NextPage = () => {
           alt="Your Company"
         />
         <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
-          Create your account
+          {success.value
+            ? "Your account has just been created successfully"
+            : "Create your account"}
         </h2>
       </div>
 
-      <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-        <form className="space-y-6" onSubmit={onSubmit}>
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium leading-6 text-gray-900">
-              Email address
-            </label>
-            <div className="mt-2">
-              <input
-                id="email"
-                type="text"
-                // type="email"
-                autoComplete="email"
-                placeholder="email"
-                className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                {...register("email")}
-              />
-            </div>
-            <ErrorMessage name="email" errors={formState.errors} render={RenderError} />
-          </div>
-          <div>
-            <div className="flex items-center justify-between">
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium leading-6 text-gray-900"
-              >
-                Password
-              </label>
-              <div className="text-sm">
-                <a href="#" className="font-semibold text-indigo-600 hover:text-indigo-500">
-                  Forgot password?
-                </a>
-              </div>
-            </div>
-            <div className="mt-2">
-              <input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                placeholder="password"
-                className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                {...register("password")}
-              />
-            </div>
-            <ErrorMessage name="password" errors={formState.errors} render={RenderError} />
-          </div>
-          <div>
-            <label
-              htmlFor="confirm_password"
-              className="block text-sm font-medium leading-6 text-gray-900"
-            >
-              Confirm password
-            </label>
-            <div className="mt-2">
-              <input
-                id="confirm_password"
-                type="password"
-                autoComplete="current-password"
-                placeholder="confirm password"
-                className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                {...register("confirm_password")}
-              />
-            </div>
-            <ErrorMessage name="confirm_password" errors={formState.errors} render={RenderError} />
-          </div>
-          <div>
-            <button
-              type="submit"
-              disabled={formState.isSubmitting}
-              className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-            >
-              Sign in
-            </button>
-          </div>
-          <div>
-            <p className="text-center text-sm text-gray-950">
-              Already have an account? <Link href="/auth/login">Log in</Link>
-            </p>
-          </div>
-        </form>
-
-        <div>
-          <div className="relative overflow-hidden text-center mt-10">
-            <div className="divider-hr text-gray-200 text-sm">
-              <span className="text-gray-900">Or continue with</span>
-            </div>
-          </div>
-          <div className="grid mt-10 grid-cols-2 gap-4">
-            <Button href="#" className="gap-3 rounded-md px-3 py-1.5 bg-[#1D9BF0] text-white">
-              <svg className="h-5 w-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M6.29 18.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0020 3.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.073 4.073 0 01.8 7.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 010 16.407a11.616 11.616 0 006.29 1.84"></path>
-              </svg>
-              <span className="text-sm font-semibold">Twitter</span>
-            </Button>
-            <Button href="#" className="gap-3 rounded-md px-3 py-1.5 bg-[#24292F] text-white">
-              <svg className="h-5 w-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M10 0C4.477 0 0 4.484 0 10.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0110 4.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.203 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.942.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0020 10.017C20 4.484 15.522 0 10 0z"
-                  clipRule="evenodd"
-                ></path>
-              </svg>
-              <span className="text-sm font-semibold">GitHub</span>
+      {success.value ? (
+        <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
+          <p className="text-center">
+            An email has also been sent to the email address you just signed up for. Please check to
+            activate your account
+          </p>
+          <div className="mt-6">
+            <Button className="py-1.5 px-3 rounded-md bg-indigo-600 hover:bg-indigo-500">
+              Go to login
             </Button>
           </div>
         </div>
+      ) : (
+        <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
+          <form className="space-y-6" autoComplete="off" autoCorrect="off" onSubmit={onSubmit}>
+            {serverError && (
+              <div className="bg-red-100 text-red-500 px-2 py-1.5 rounded text-sm">
+                Error: {serverError}
+              </div>
+            )}
+            <InputAuth
+              label="Email address"
+              placeholder="Email address"
+              type="text"
+              {...register("email")}
+              errors={formState.errors}
+            />
+            <InputAuth
+              label="Name"
+              placeholder="name"
+              type="text"
+              {...register("name")}
+              errors={formState.errors}
+            />
+            <InputAuth
+              label="Password"
+              placeholder="Password"
+              type="password"
+              {...register("password")}
+              errors={formState.errors}
+            />
+            <InputAuth
+              label="Confirm password"
+              placeholder="Confirm password"
+              type="password"
+              {...register("confirm_password")}
+              errors={formState.errors}
+            />
+            <div>
+              <Button
+                type="submit"
+                disabled={formState.isSubmitting}
+                className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-30"
+                loading={formState.isSubmitting}
+              >
+                Sign up
+              </Button>
+            </div>
+            <div>
+              <p className="text-center text-sm text-gray-950">
+                Already have an account?{" "}
+                <Link href="/auth/login" className="text-blue-600">
+                  Log in
+                </Link>
+              </p>
+            </div>
+          </form>
 
-        <p className="mt-10 text-center text-sm text-gray-500">
-          Not a member?{" "}
-          <Link href="#" className="font-semibold leading-6 text-indigo-600 hover:text-indigo-500">
-            Start a 14 day free trial
-          </Link>
-        </p>
-      </div>
+          <ExternalOAuth />
+        </div>
+      )}
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import Layout from "@/components/layout";
+import Layout from "@/components/layout/default";
 import { withServerSideSession } from "@/libs/auth";
 import { GetServerSideProps, NextPage } from "next";
 import Link from "next/link";

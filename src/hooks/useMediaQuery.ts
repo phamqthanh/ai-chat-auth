@@ -28,6 +28,7 @@ const useMediaQuery = (initial?: MediaScreen) => {
     const matchedScreen = matchesScreen();
     setState(matchedScreen);
   }, []);
+  useEffect(() => update(), [update]);
 
   useMediaListener(screenSize.desktop, update);
   useMediaListener(screenSize.laptop, update);

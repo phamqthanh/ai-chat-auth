@@ -11,8 +11,14 @@ export class BaseModel {
   static get SINGULAR() {
     return this.name.toUpperCase();
   }
+  get SINGULAR() {
+    return this.constructor.name.toUpperCase();
+  }
   static get PLURAL() {
-    return this.name.toUpperCase() + "S";
+    return this.SINGULAR + "S";
+  }
+  get PLURAL() {
+    return this.SINGULAR + "S";
   }
 }
 type GetOverWrite = <R = any, D = any>(
